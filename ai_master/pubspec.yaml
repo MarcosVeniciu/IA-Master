@@ -34,10 +34,28 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  provider: ^6.1.2            # Adiciona provider para gerenciamento de estado
+  collection: ^1.18.0         # Adiciona pacote collection
+  freezed_annotation: ^2.0.0 # Versão recomendada
+  json_annotation: ^4.0.0    # Versão recomendada
+  sqflite: ^2.3.3             # Adiciona sqflite para banco de dados local
+  path: ^1.9.0                # Adiciona path para manipulação de caminhos
+  uuid: ^4.5.1
+  shared_preferences: ^2.5.3
+  sqflite_common_ffi: ^2.3.0+1 # Adiciona sqflite_common_ffi para compatibilidade com a web
+  smooth_page_indicator: ^1.2.1
+  intl: ^0.20.2
+  timeago: ^3.2.2 # Adiciona para formatação de data relativa (versão compatível com intl ^0.20.2)
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  build_runner: ^2.4.0      # Versão recomendada
+  freezed: ^2.0.0             # Versão recomendada
+  json_serializable: ^6.0.0 # Versão compatível com json_annotation ^4.0.0
+  test: ^1.24.9 # Adiciona o pacote test para testes unitários
+  mocktail: ^1.0.3 # Adiciona mocktail para mocking em testes
+  # path foi movido para dependencies
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -45,6 +63,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  mockito: ^5.4.6
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -58,7 +77,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
+  assets:
+    - assets/scenarios/ # Adiciona o diretório de cenários
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

@@ -1,122 +1,153 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
+// Core Application Components
+import 'package:ai_master/controllers/main_screen_controller.dart';
+import 'package:ai_master/features/main_screen/view/material_main_screen_view.dart';
+
+// Models (Implicitly used by Controller/Repository)
+// import 'package:ai_master/models/adventure.dart';
+// import 'package:ai_master/models/scenario.dart';
+
+// Services and Repositories (Dependencies)
+import 'package:ai_master/repositories/adventure_repository.dart';
+import 'package:ai_master/services/app_preferences.dart'; // Abstract class
+import 'package:ai_master/services/shared_preferences_app_preferences.dart'; // Implementation
+import 'package:ai_master/services/database_helper.dart';
+import 'package:ai_master/services/navigation_service.dart'; // Abstract class
+import 'package:ai_master/services/mock_navigation_service.dart'; // Implementation
+import 'package:ai_master/services/scenario_loader.dart';
+
+/// Application entry point.
+///
+/// Initializes necessary services and sets up the root widget with dependency injection.
+Future<void> main() async {
+  /// Ensures Flutter bindings are initialized before any Flutter-specific code runs.
+  /// Crucial for plugins like shared_preferences or path_provider.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  /// Initialize asynchronous services before the app starts.
+  /// This ensures that dependencies requiring async setup (like SharedPreferences)
+  /// are ready before being injected.
+  // Use the concrete implementation's factory method
+  final AppPreferences appPreferences =
+      await SharedPreferencesAppPreferences.getInstance();
+
+  /// Get the Singleton instance of DatabaseHelper.
+  /// Initialization happens lazily within the helper itself when `database` is first accessed.
+  final DatabaseHelper databaseHelper = DatabaseHelper.instance;
+  // No need to call initialize() here anymore.
+
+  /// Instantiate synchronous services and repositories, injecting dependencies.
+  final AdventureRepository adventureRepository = AdventureRepository(
+    dbHelper: databaseHelper,
+  ); // Pass dbHelper using named argument
+  final ScenarioLoader scenarioLoader = ScenarioLoader();
+  // Use the concrete implementation for NavigationService
+  final NavigationService navigationService = MockNavigationService();
+
+  /// Run the Flutter application.
+  /// Uses `MultiProvider` to make all necessary services and controllers
+  /// available throughout the widget tree.
+  runApp(
+    MultiProvider(
+      providers: [
+        // --- Service/Repository Providers ---
+        // Provides singleton instances of services and repositories.
+        // Using `.value` is efficient for already instantiated objects.
+
+        /// Provides the application preferences service.
+        Provider<AppPreferences>.value(value: appPreferences),
+
+        /// Provides the database helper service.
+        Provider<DatabaseHelper>.value(value: databaseHelper),
+
+        /// Provides the adventure repository.
+        Provider<AdventureRepository>.value(value: adventureRepository),
+
+        /// Provides the scenario loader service.
+        Provider<ScenarioLoader>.value(value: scenarioLoader),
+
+        /// Provides the navigation service.
+        Provider<NavigationService>.value(value: navigationService),
+
+        // --- Controller Provider ---
+        // Provides the main screen controller, which manages the state for the main view.
+        // `ChangeNotifierProvider` automatically handles listener notifications.
+
+        /// Creates and provides the `MainScreenController`.
+        /// It reads its dependencies (`AdventureRepository`, `ScenarioLoader`, etc.)
+        /// from the `context` using `context.read<T>()`.
+        /// The `..initialize()` cascade calls the controller's initialization logic
+        /// immediately after creation.
+        ChangeNotifierProvider<MainScreenController>(
+          create:
+              (context) => MainScreenController(
+                adventureRepo: context.read<AdventureRepository>(),
+                scenarioLoader: context.read<ScenarioLoader>(),
+                navigationService: context.read<NavigationService>(),
+                appPreferences: context.read<AppPreferences>(),
+              )..initialize(), // Initialize the controller after creation
+        ),
+      ],
+      child: const MyApp(), // The root widget of the application
+    ),
+  );
 }
 
+/// The root widget of the application.
+///
+/// Sets up the `MaterialApp` and defines the global theme.
 class MyApp extends StatelessWidget {
+  /// Creates the MyApp widget.
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    /// Builds the MaterialApp, the core widget for a Material Design app.
     return MaterialApp(
-      title: 'Flutter Demo',
+      /// Title displayed in the OS task switcher.
+      title: 'IA Master',
+
+      /// Defines the overall visual theme for the application.
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+        /// Sets the theme to dark mode.
+        brightness: Brightness.dark,
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+        /// Defines the color scheme based on a seed color.
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.teal, // Base color for generating the scheme
+          brightness: Brightness.dark, // Ensures dark mode colors
+        ),
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+        /// Enables Material 3 design components and styles.
+        useMaterial3: true,
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+        /// Customizes the appearance of Card widgets.
+        cardTheme: CardTheme(
+          elevation: 3, // Shadow depth
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), // Rounded corners
+          ),
+        ),
 
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        /// Customizes the appearance of text input fields.
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ), // Border style
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+
+      /// The initial screen displayed when the app starts.
+      /// `MaterialMainScreenView` will obtain the `MainScreenController`
+      /// from the `Provider` context automatically (e.g., using Consumer or context.watch).
+      // Remove 'const' because the widget tree now depends on non-constant providers.
+      // The view no longer takes the controller explicitly.
+      home: MaterialMainScreenView(),
+
+      /// Hides the debug banner in the top-right corner.
+      debugShowCheckedModeBanner: false,
     );
   }
 }

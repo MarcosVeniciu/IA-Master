@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.ai_master"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973" // Define a versão específica do NDK
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
