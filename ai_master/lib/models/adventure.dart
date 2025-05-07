@@ -18,15 +18,22 @@ class Adventure with _$Adventure {
     required String id,
 
     /// Título do cenário base da aventura.
-    required String scenarioTitle, // @JsonKey removida do parâmetro
+    @JsonKey(name: 'scenario_title') required String scenarioTitle,
+
+    /// Título específico desta instância da aventura, definido pelo usuário ou gerado.
+    @JsonKey(name: 'adventure_title') required String adventureTitle,
+
     /// o progresso atual na aventura, um valor numerico entre 0.0 e 1.0 representando a porcentagem de progresso ( quantidade de cenas concluidas em relaçao ao total de cenas da aventura)
-    double? progressIndicator, // @JsonKey removida do parâmetro
+    @JsonKey(name: 'progress_indicator') double? progressIndicator,
+
     /// Estado completo do jogo serializado como uma string JSON.
     /// Inclui variáveis, status de personagens, inventário, etc.
-    required String gameState, // @JsonKey removida do parâmetro
+    @JsonKey(name: 'game_state') required String gameState,
+
     /// Timestamp da última vez que a aventura foi jogada ou modificada.
     /// Armazenado como milissegundos desde a época (Unix epoch).
-    required int lastPlayedDate, // @JsonKey removida do parâmetro
+    @JsonKey(name: 'last_played_date') required int lastPlayedDate,
+
     /// Status de sincronização da aventura com um backend (se aplicável).
     ///
     /// Valores possíveis:
@@ -34,13 +41,15 @@ class Adventure with _$Adventure {
     /// - 1: Sincronizando.
     /// - 2: Sincronizado com sucesso.
     /// - -1: Erro durante a sincronização.
-    @Default(0) int syncStatus, // @JsonKey removida do parâmetro
+    @JsonKey(name: 'sync_status') @Default(0) int syncStatus,
+
     /// Lista de mensagens do chat associadas a esta aventura.
     /// Este campo é transiente e não é persistido diretamente na tabela Adventure.
     /// É carregado sob demanda pelo [AdventureRepository].
-    // @JsonKey removida do parâmetro, já que está no getter gerado.
+    // Marcamos para não incluir no JSON/mapa e não esperar do JSON/mapa
+    @JsonKey(includeFromJson: false, includeToJson: false)
     @Default([])
-    List<ChatMessage> messages, // Tipo corrigido para List<ChatMessage>
+    List<ChatMessage> messages,
   }) = _Adventure;
 
   /// Construtor privado para uso do Freezed.
@@ -57,8 +66,11 @@ class Adventure with _$Adventure {
   /// Este método adapta o mapa vindo do SQFlite para o formato esperado
   /// pelo factory `fromJson`.
   factory Adventure.fromMap(Map<String, dynamic> map) {
-    // O SQFlite retorna o mapa diretamente no formato que json_serializable espera.
-    // Se houvesse necessidade de conversão (ex: booleanos como 0/1), seria feita aqui.
+    // O SQFlite retorna o mapa com snake_case, mas fromJson espera camelCase
+    // (ou o que for definido em @JsonKey(name: ...)).
+    // Como adicionamos @JsonKey(name:...), o fromJson gerado já saberá
+    // mapear 'scenario_title' para scenarioTitle, etc.
+    // Nenhuma conversão manual é necessária aqui.
     return Adventure.fromJson(map);
   }
 
@@ -68,7 +80,8 @@ class Adventure with _$Adventure {
   /// O campo `messages` é explicitamente excluído por `json_serializable`
   /// devido à anotação `@JsonKey`.
   Map<String, dynamic> toMap() {
-    // O método toJson gerado pelo freezed/json_serializable já faz o trabalho.
+    // O método toJson gerado saberá usar os nomes definidos em @JsonKey(name:...)
+    // e excluirá 'messages' devido a @JsonKey(includeToJson: false).
     return toJson();
   }
 }

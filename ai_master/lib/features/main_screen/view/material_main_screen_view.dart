@@ -1,83 +1,91 @@
 import 'package:collection/collection.dart'; // Importa para firstWhereOrNull
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'; // Importa para ScrollDirection
-// import 'package:flutter/services.dart'; // Removido - desnecessário (elementos em material.dart)
-import 'package:ai_master/features/main_screen/view/main_screen_view_abstract.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Importa Riverpod
+
+// Models
 import 'package:ai_master/models/scenario.dart';
 import 'package:ai_master/models/adventure.dart';
-import 'package:ai_master/controllers/main_screen_controller.dart';
-// import 'package:ai_master/widgets/app_drawer.dart'; // Removido - não utilizado
-import 'package:ai_master/features/main_screen/widgets/highlight_section_widget.dart'; // Importa o widget extraído
-import 'package:ai_master/features/main_screen/widgets/ongoing_adventure_card.dart'; // Importa o widget extraído
-import 'package:ai_master/features/main_screen/widgets/available_scenario_card.dart'; // Importa o widget extraído
+import 'package:ai_master/models/scenario_data.dart'; // Importa ScenarioData
 
-/// A implementação da tela principal (`MainScreen`) usando widgets do Material Design.
+// Providers (Agora usando os providers da splash screen para dados pré-carregados)
+// import 'package:ai_master/providers/main_screen_providers.dart'; // Removido
+import 'package:ai_master/features/splash_screen/providers/splash_providers.dart'; // Adicionado
+// Providers de dependência para o controller (mantidos por enquanto)
+import 'package:ai_master/providers/main_screen_providers.dart'
+    show
+        adventureRepositoryProvider,
+        scenarioLoaderProvider,
+        navigationServiceProvider;
+
+// Widgets
+import 'package:ai_master/features/main_screen/widgets/highlight_section_widget.dart';
+import 'package:ai_master/features/main_screen/widgets/ongoing_adventure_card.dart';
+import 'package:ai_master/features/main_screen/widgets/available_scenario_card.dart';
+// Importa a nova tela
+import 'package:ai_master/features/all_scenarios/view/all_scenarios_screen.dart';
+
+// Controller (Temporariamente para ações - será refatorado/removido depois)
+// TODO: Refatorar ou remover dependência direta do controller para ações
+import 'package:ai_master/controllers/main_screen_controller.dart';
+import 'package:provider/provider.dart'
+    as provider; // Usar prefixo para provider
+
+/// A implementação da tela principal (`MainScreen`) usando widgets do Material Design
+/// e gerenciamento de estado com Riverpod.
 ///
 /// Exibe as seções de destaque, aventuras em andamento e cenários disponíveis,
-/// e interage com o [MainScreenController] para obter dados e delegar ações.
-/// Utiliza o `provider` para reagir às mudanças de estado no controller.
-/// Os widgets das seções foram extraídos para a pasta `widgets/`.
-class MaterialMainScreenView extends MainScreenViewAbstract {
+/// consumindo dados dos providers Riverpod ([availableScenariosProvider],
+/// [ongoingAdventuresProvider]).
+class MaterialMainScreenView extends ConsumerStatefulWidget {
   /// Cria uma instância de [MaterialMainScreenView].
-  const MaterialMainScreenView({super.key}); // Usa super parâmetro
+  const MaterialMainScreenView({super.key});
 
   @override
-  State<MaterialMainScreenView> createState() => _MaterialMainScreenViewState();
+  ConsumerState<MaterialMainScreenView> createState() =>
+      _MaterialMainScreenViewState();
 }
 
 /// O estado associado a [MaterialMainScreenView].
 ///
-/// Gerencia a construção da UI principal, incluindo a [SliverAppBar] e as seções
-/// de conteúdo, delegando a construção de partes específicas para os widgets
-/// extraídos ([HighlightSectionWidget], [OngoingAdventureCard], [AvailableScenarioCard]).
-class _MaterialMainScreenViewState extends State<MaterialMainScreenView> {
+/// Gerencia o [ScrollController] para controlar a visibilidade dos botões flutuantes
+/// e constrói a UI principal consumindo os providers Riverpod via `ref`.
+class _MaterialMainScreenViewState
+    extends ConsumerState<MaterialMainScreenView> {
   /// Controlador para detectar a rolagem da [CustomScrollView].
   late ScrollController _scrollController;
 
   /// Estado para controlar a visibilidade dos botões flutuantes.
   bool _showFloatingButtons = true;
 
-  // A lógica de estado específica das seções foi movida para os widgets correspondentes.
-
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
+    // Não há mais necessidade de chamar controller.loadData() aqui,
+    // os FutureProviders cuidam disso automaticamente.
   }
 
   /// Listener para o [ScrollController] que atualiza a visibilidade dos botões.
   void _scrollListener() {
-    // Verifica a direção do scroll para ocultar/mostrar os botões
-    if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.reverse) {
-      if (_showFloatingButtons) {
-        // Usa setState para reconstruir a UI com os botões ocultos
-        setState(() {
-          _showFloatingButtons = false;
-        });
-      }
-    } else if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.forward) {
-      if (!_showFloatingButtons) {
-        // Usa setState para reconstruir a UI com os botões visíveis
-        setState(() {
-          _showFloatingButtons = true;
-        });
-      }
-    }
-    // Garante que os botões sempre apareçam se o scroll estiver no topo
-    if (_scrollController.position.pixels == 0 && !_showFloatingButtons) {
-      setState(() {
-        _showFloatingButtons = true;
-      });
+    if (!mounted) return; // Verifica se o estado ainda está montado
+
+    final direction = _scrollController.position.userScrollDirection;
+    final pixels = _scrollController.position.pixels;
+
+    if (direction == ScrollDirection.reverse && _showFloatingButtons) {
+      setState(() => _showFloatingButtons = false);
+    } else if (direction == ScrollDirection.forward && !_showFloatingButtons) {
+      setState(() => _showFloatingButtons = true);
+    } else if (pixels == 0 && !_showFloatingButtons) {
+      // Garante que os botões apareçam no topo
+      setState(() => _showFloatingButtons = true);
     }
   }
 
   @override
   void dispose() {
-    // Remove o listener e dispõe o controller para evitar memory leaks
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
@@ -85,127 +93,182 @@ class _MaterialMainScreenViewState extends State<MaterialMainScreenView> {
 
   @override
   Widget build(BuildContext context) {
-    // O Consumer<MainScreenController> garante que o buildUI é chamado
-    // sempre que o controller notifica os ouvintes.
-    return buildUI();
-  }
+    /// Observa os providers de cenários e aventuras.
+    /// `ref.watch` reconstrói o widget quando o estado do provider muda.
+    final scenariosAsyncValue = ref.watch(
+      scenariosLoadProvider,
+    ); // Modificado para provider da splash
+    final adventuresAsyncValue = ref.watch(
+      adventuresLoadProvider,
+    ); // Modificado para provider da splash
 
-  /// Constrói a interface principal da tela usando [CustomScrollView] e [SliverAppBar].
-  ///
-  /// Esta abordagem permite que a [SliverAppBar] (com o botão de menu) desapareça
-  /// durante o scroll e que a seção de destaque role junto com o conteúdo.
-  Widget buildUI() {
-    // Usa Consumer para ouvir as mudanças no MainScreenController.
-    return Consumer<MainScreenController>(
-      builder: (context, controller, child) {
-        // Calcula a altura desejada para a seção de destaque.
-        final double highlightHeight =
-            (MediaQuery.of(context).size.height * 0.4).clamp(250.0, 400.0);
+    // Instancia o controller localmente para usar nas ações.
+    // Lê as dependências necessárias dos providers Riverpod.
+    // ref.read é usado pois só precisamos da instância, não precisamos ouvir mudanças.
+    // NOTA: Isso é uma solução temporária. O ideal seria refatorar as ações
+    // para providers dedicados ou usar ref diretamente nas callbacks.
+    final controller = MainScreenController(
+      adventureRepo: ref.read(adventureRepositoryProvider),
+      scenarioLoader: ref.read(scenarioLoaderProvider),
+      navigationService: ref.read(navigationServiceProvider),
+      // AppPreferences foi removido do construtor do controller
+    );
 
-        // Obtém os cenários para a seção de destaque.
-        final highlightScenarios =
-            controller.availableScenarios.take(3).toList();
+    // Calcula a altura da seção de destaque.
+    final double highlightHeight = (MediaQuery.of(context).size.height * 0.4)
+        .clamp(250.0, 400.0);
 
-        // O Scaffold agora não tem mais AppBar nem Drawer.
-        return Scaffold(
-          // Usa um Stack para colocar os botões flutuantes sobre o conteúdo.
-          body: Stack(
-            children: [
-              // O conteúdo principal rolável.
-              RefreshIndicator(
-                onRefresh: controller.loadData,
-                child: CustomScrollView(
-                  controller: _scrollController, // Associa o ScrollController
-                  slivers: <Widget>[
-                    /// Sliver que contém a seção de destaque.
-                    /// Usa o widget extraído [HighlightSectionWidget].
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: highlightHeight, // Define a altura
-                        child: HighlightSectionWidget(
-                          // <--- Classe pública usada aqui
-                          highlightScenarios: highlightScenarios,
-                          isLoading: controller.isLoadingScenarios,
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            // Adiciona imagem como primeiro filho
+            child: Image.asset(
+              'assets/images/background.png', // Caminho da imagem
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          /// Conteúdo principal rolável com RefreshIndicator.
+          /// O RefreshIndicator agora usa os providers para recarregar.
+          RefreshIndicator(
+            onRefresh: () async {
+              // Invalida os providers para forçar o recarregamento.
+              ref.invalidate(
+                scenariosLoadProvider,
+              ); // Modificado para provider da splash
+              ref.invalidate(
+                adventuresLoadProvider,
+              ); // Modificado para provider da splash
+              // Espera um pouco para dar tempo aos providers de começarem a carregar
+              // ou pode-se esperar pelos FutureProviders completarem se necessário.
+              await Future.delayed(const Duration(milliseconds: 100));
+            },
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: <Widget>[
+                /// Sliver para a seção de destaque.
+                /// Usa `scenariosAsyncValue.when` para lidar com os estados.
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: highlightHeight,
+                    child: scenariosAsyncValue.when(
+                      data: (List<ScenarioData> scenariosDataList) {
+                        // Passa a lista de ScenarioData diretamente, pegando os 3 primeiros.
+                        final highlightData =
+                            scenariosDataList.take(3).toList();
+                        return HighlightSectionWidget(
+                          highlightScenariosData:
+                              highlightData, // Alterado para highlightScenariosData
+                          isLoading: false, // Dados carregados
+                          // TODO: Refatorar onStartScenario para usar ref.read ou um provider de ação
+                          // onStartScenario ainda espera um Scenario, o que é tratado dentro de HighlightSectionWidget
                           onStartScenario: controller.onStartScenario,
-                        ),
-                      ),
+                        );
+                      },
+                      loading:
+                          () => HighlightSectionWidget(
+                            highlightScenariosData:
+                                const [], // Lista vazia de ScenarioData enquanto carrega
+                            isLoading: true, // Estado de carregamento
+                            onStartScenario:
+                                (_) {}, // Não faz nada enquanto carrega
+                          ),
+                      error:
+                          (error, stackTrace) => Center(
+                            child: Text(
+                              'Erro ao carregar destaques: $error',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                     ),
+                  ),
+                ),
 
-                    /// Sliver com padding horizontal e que contém as seções de conteúdo.
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          const SizedBox(height: 24), // Espaçamento inicial
-                          // --- Seção de Aventuras em Andamento ---
-                          _buildOngoingAdventuresSection(controller),
-                          const SizedBox(
-                            height: 24,
-                          ), // Espaçamento entre seções
-                          // --- Seção de Cenários Disponíveis ---
-                          _buildAvailableScenariosSection(controller),
-                          const SizedBox(height: 16), // Padding inferior
-                        ]),
-                      ),
+                /// Sliver com padding para as seções de conteúdo.
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const SizedBox(height: 24),
+                      // --- Seção de Aventuras em Andamento ---
+                      // Passa ambos AsyncValues para lidar com a dependência de cenários
+                      _buildOngoingAdventuresSection(
+                        adventuresAsyncValue,
+                        scenariosAsyncValue,
+                        controller,
+                      ), // Passa controller temporariamente
+                      const SizedBox(height: 24),
+                      // --- Seção de Cenários Disponíveis ---
+                      _buildAvailableScenariosSection(
+                        scenariosAsyncValue,
+                        controller,
+                      ), // Passa controller temporariamente
+                      const SizedBox(height: 16), // Padding inferior
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          /// Botões flutuantes posicionados.
+          Positioned(
+            top:
+                16.0 +
+                MediaQuery.of(context).padding.top, // Considera a safe area
+            right: 16.0,
+            child: AnimatedOpacity(
+              opacity: _showFloatingButtons ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              // Ignora cliques quando invisível
+              child: IgnorePointer(
+                ignoring: !_showFloatingButtons,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Botões de ação (mantidos por enquanto)
+                    // TODO: Refatorar navegação para usar ref.read(navigationServiceProvider)
+                    IconButton(
+                      icon: const Icon(Icons.payment),
+                      tooltip: 'Assinatura',
+                      onPressed:
+                          () => Navigator.pushNamed(context, '/subscription'),
+                    ),
+                    const SizedBox(width: 8.0),
+                    IconButton(
+                      icon: const Icon(Icons.info_outline),
+                      tooltip: 'Instruções',
+                      onPressed:
+                          () => Navigator.pushNamed(context, '/instructions'),
+                    ),
+                    const SizedBox(width: 8.0),
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      tooltip: 'Configurações',
+                      onPressed:
+                          () => Navigator.pushNamed(context, '/settings'),
                     ),
                   ],
                 ),
               ),
-              // Botões flutuantes posicionados no canto superior direito.
-              Positioned(
-                top: 16.0, // Ajuste conforme necessário para a status bar
-                right: 16.0,
-                child: AnimatedOpacity(
-                  opacity: _showFloatingButtons ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      // TODO: Considerar adicionar um fundo aos botões se o contraste for baixo
-                      // style: IconButton.styleFrom(backgroundColor: Colors.black.withOpacity(0.3)),
-                      IconButton(
-                        icon: const Icon(Icons.payment),
-                        tooltip: 'Assinatura',
-                        onPressed: () {
-                          // TODO: Garantir que a rota '/subscription' está definida
-                          Navigator.pushNamed(context, '/subscription');
-                        },
-                      ),
-                      const SizedBox(width: 8.0),
-                      IconButton(
-                        icon: const Icon(Icons.info_outline),
-                        tooltip: 'Instruções',
-                        onPressed: () {
-                          // TODO: Garantir que a rota '/instructions' está definida
-                          Navigator.pushNamed(context, '/instructions');
-                        },
-                      ),
-                      const SizedBox(width: 8.0),
-                      IconButton(
-                        icon: const Icon(Icons.settings),
-                        tooltip: 'Configurações',
-                        onPressed: () {
-                          // TODO: Garantir que a rota '/settings' está definida
-                          Navigator.pushNamed(context, '/settings');
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  /// Constrói a seção de aventuras em andamento (RF-001.1, RF-002, RF-003).
+  /// Constrói a seção de aventuras em andamento usando Riverpod.
   ///
-  /// Exibe um título e uma lista horizontal de [Adventure]s usando o widget
-  /// [OngoingAdventureCard] extraído, ou exibe estados de carregamento/vazio.
-  /// Este widget é usado dentro de um [SliverList].
-  Widget _buildOngoingAdventuresSection(MainScreenController controller) {
+  /// Recebe os [AsyncValue]s das aventuras e cenários para lidar com os estados
+  /// de carregamento, dados e erro, e para buscar a imagem do cenário correspondente.
+  Widget _buildOngoingAdventuresSection(
+    AsyncValue<List<Adventure>> adventuresAsyncValue,
+    AsyncValue<List<ScenarioData>>
+    scenariosDataAsyncValue, // Alterado para ScenarioData
+    MainScreenController controller, // Temporário para ação
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -214,71 +277,110 @@ class _MaterialMainScreenViewState extends State<MaterialMainScreenView> {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
-        // Handle Loading State
-        if (controller.isLoadingAdventures &&
-            controller.ongoingAdventures.isEmpty)
-          const SizedBox(
-            height: 170, // Match card height
-            child: Center(child: CircularProgressIndicator()),
-          )
-        // Handle Empty State
-        else if (controller.ongoingAdventures.isEmpty &&
-            !controller.isLoadingAdventures)
-          SizedBox(
-            height: 170, // Match card height
-            child: Center(
-              child: Text(
-                'No adventures started yet.\nPick one below!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
+
+        /// Usa `adventuresAsyncValue.when` para construir a UI baseada no estado.
+        adventuresAsyncValue.when(
+          data: (adventures) {
+            // Se não houver aventuras, mostra mensagem.
+            if (adventures.isEmpty) {
+              return const SizedBox(
+                height: 170, // Match card height
+                child: Center(
+                  child: Text(
+                    'No adventures started yet.\nPick one below!',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
+            // Se houver aventuras, constrói a lista.
+            return SizedBox(
+              height: 170, // Altura fixa para a lista horizontal
+              /// Usa `scenariosDataAsyncValue.when` aninhado para garantir que os cenários
+              /// estejam disponíveis para buscar a imagem.
+              child: scenariosDataAsyncValue.when(
+                data: (List<ScenarioData> scenariosDataList) {
+                  // Otimização O(1): Cria um Map para busca rápida de ScenarioData pelo título do cenário.
+                  final scenarioDataMap = {
+                    for (var data in scenariosDataList)
+                      data.scenario.title: data,
+                  };
+
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: adventures.length,
+                    itemBuilder: (context, index) {
+                      final adventure = adventures[index];
+                      // Busca o ScenarioData correspondente usando o Map (O(1)).
+                      final stopwatch =
+                          Stopwatch()..start(); // Inicia o cronômetro
+                      final correspondingScenarioData =
+                          scenarioDataMap[adventure.scenarioTitle];
+                      stopwatch.stop(); // Para o cronômetro
+
+                      if (correspondingScenarioData != null) {
+                        debugPrint(
+                          'MaterialMainScreenView: ScenarioData search for "${adventure.scenarioTitle}" took ${stopwatch.elapsedMicroseconds}µs. Found: ${correspondingScenarioData.scenario.title}',
+                        );
+                      } else {
+                        debugPrint(
+                          'MaterialMainScreenView: ScenarioData search for "${adventure.scenarioTitle}" took ${stopwatch.elapsedMicroseconds}µs. NOT FOUND.',
+                        );
+                      }
+
+                      // Usa os bytes decodificados diretamente do ScenarioData.
+                      final decodedImageBytes =
+                          correspondingScenarioData?.decodedImageBytes;
+
+                      return OngoingAdventureCard(
+                        adventure: adventure,
+                        // Passa os bytes decodificados em vez da string Base64.
+                        // O OngoingAdventureCard precisará ser atualizado para aceitar Uint8List?.
+                        decodedImageBytes: decodedImageBytes,
+                        // TODO: Refatorar onTap para usar ref.read ou um provider de ação
+                        onTap:
+                            () => controller.onContinueAdventure(adventure.id),
+                      );
+                    },
+                  );
+                },
+                // Mostra indicador de carregamento para cenários se as aventuras já carregaram
+                loading: () => const Center(child: CircularProgressIndicator()),
+                // Mostra erro se o carregamento de cenários falhar
+                error: (e, s) => Center(child: Text('Erro cenários: $e')),
               ),
-            ),
-          )
-        // Handle Data State
-        else
-          SizedBox(
-            height: 170, // Altura fixa para a lista horizontal
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: controller.ongoingAdventures.length,
-              itemBuilder: (context, index) {
-                final adventure = controller.ongoingAdventures[index];
-
-                // Encontra o cenário correspondente para obter a imagem
-                // Retorna null se não encontrar para evitar erro
-                // Usa firstWhereOrNull para simplificar e o nome correto imageBase64
-                final correspondingScenario = controller.availableScenarios
-                    .firstWhereOrNull(
-                      (scenario) =>
-                          scenario.title ==
-                          adventure.scenarioTitle, // Renomeado
-                    );
-
-                // Obtém a imagem base64 (ou null se o cenário não foi encontrado)
-                final imageBase64 = correspondingScenario?.imageBase64;
-
-                // Usa o widget extraído OngoingAdventureCard
-                return OngoingAdventureCard(
-                  // <--- Classe pública usada aqui
-                  adventure: adventure,
-                  // Passa a imagem base64 (pode ser null)
-                  scenarioImageBase64: imageBase64,
-                  // Passa o ID da aventura para o controller
-                  onTap: () => controller.onContinueAdventure(adventure.id),
-                );
-              },
-            ),
-          ),
+            );
+          },
+          // Mostra indicador de carregamento enquanto as aventuras carregam.
+          loading:
+              () => const SizedBox(
+                height: 170,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+          // Mostra mensagem de erro se o carregamento de aventuras falhar.
+          error:
+              (error, stackTrace) => SizedBox(
+                height: 170,
+                child: Center(
+                  child: Text(
+                    'Erro ao carregar aventuras: $error',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+        ),
       ],
     );
   }
 
-  /// Constrói a seção de cenários disponíveis (RF-001.2, RF-004).
+  /// Constrói a seção de cenários disponíveis usando Riverpod.
   ///
-  /// Exibe um título e uma lista vertical de [Scenario]s usando o widget
-  /// [AvailableScenarioCard] extraído, ou exibe estados de carregamento/vazio.
-  /// Este widget é usado dentro de um [SliverList].
-  Widget _buildAvailableScenariosSection(MainScreenController controller) {
+  /// Recebe o [AsyncValue] dos cenários para lidar com os estados.
+  Widget _buildAvailableScenariosSection(
+    AsyncValue<List<ScenarioData>>
+    scenariosDataAsyncValue, // Alterado para ScenarioData
+    MainScreenController controller, // Temporário para ação
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -287,35 +389,136 @@ class _MaterialMainScreenViewState extends State<MaterialMainScreenView> {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
-        // Handle Loading State
-        if (controller.isLoadingScenarios &&
-            controller.availableScenarios.isEmpty)
-          const Center(child: CircularProgressIndicator())
-        // Handle Empty State
-        else if (controller.availableScenarios.isEmpty &&
-            !controller.isLoadingScenarios)
-          Center(
-            child: Text(
-              'No scenarios available at the moment.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          )
-        // Handle Data State
-        else
-          // Mapeia cada cenário para um card usando o widget extraído
-          ...controller.availableScenarios.map((scenario) {
-            // Usa o widget extraído AvailableScenarioCard
-            return AvailableScenarioCard(
-              // <--- Classe pública usada aqui
-              scenario: scenario,
-              onStart: () => controller.onStartScenario(scenario),
+
+        /// Usa `scenariosDataAsyncValue.when` para construir a UI.
+        scenariosDataAsyncValue.when(
+          data: (List<ScenarioData> allScenariosData) {
+            /// Define o número máximo de cenários a serem exibidos na grade inicial.
+            /// Cenários além deste número serão acessíveis através do botão "Outros cenários".
+            const int maxInitialScenarios = 5;
+
+            // Se não houver cenários disponíveis, exibe uma mensagem centralizada.
+            if (allScenariosData.isEmpty) {
+              return const Center(
+                child: Text('No scenarios available at the moment.'),
+              );
+            }
+
+            /// Cria a lista de ScenarioData que serão exibidos diretamente na grade principal.
+            final displayedScenariosData =
+                allScenariosData.take(maxInitialScenarios).toList();
+
+            /// Flag para indicar se existem mais cenários do que o limite inicial.
+            /// Usado para decidir se o botão "Outros cenários" deve ser exibido.
+            final bool hasMoreScenarios =
+                allScenariosData.length > maxInitialScenarios;
+
+            // Constrói a grade responsiva usando LayoutBuilder.
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                // Calcula o número de colunas com base na largura da tela.
+                int crossAxisCount = 2; // Padrão para telas menores
+                if (constraints.maxWidth > 900) {
+                  crossAxisCount = 4; // Telas largas
+                } else if (constraints.maxWidth > 600) {
+                  crossAxisCount = 3; // Telas médias
+                }
+
+                // Define a proporção desejada para os cards.
+                const double childAspectRatio = 3 / 4;
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(top: 8),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: childAspectRatio,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+
+                  /// Define o número total de itens na grade:
+                  /// os cenários exibidos + 1 (o botão "Outros") se houver mais cenários.
+                  itemCount:
+                      displayedScenariosData.length +
+                      (hasMoreScenarios ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    /// Verifica se o índice atual corresponde a um cenário a ser exibido.
+                    if (index < displayedScenariosData.length) {
+                      final scenarioData = displayedScenariosData[index];
+
+                      /// Retorna o card padrão para o cenário.
+                      /// Passa scenarioData.scenario para o card e para a ação.
+                      /// O AvailableScenarioCard precisará ser atualizado para aceitar Uint8List?
+                      /// e usar scenarioData.decodedImageBytes.
+                      return AvailableScenarioCard(
+                        scenario: scenarioData.scenario,
+                        decodedImageBytes: scenarioData.decodedImageBytes,
+                        // TODO: Refatorar onStart para usar ref.read ou um provider de ação
+                        onStart:
+                            () => controller.onStartScenario(
+                              scenarioData.scenario,
+                            ),
+                      );
+                    }
+                    /// Se o índice for o último e houver mais cenários, exibe o botão.
+                    else {
+                      /// Um [InkWell] envolvendo um [Card] estilizado que funciona
+                      /// como botão para navegar para a [AllScenariosScreen].
+                      return InkWell(
+                        onTap: () {
+                          /// Ação de navegação ao tocar no botão.
+                          /// Usa [Navigator.push] com [MaterialPageRoute] para
+                          /// ir para a tela que lista todos os cenários.
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AllScenariosScreen(),
+                            ),
+                          );
+                        },
+                        child: Card(
+                          /// Estilo visual para o botão, diferenciando-o dos cards de cenário.
+                          /// Usa uma cor secundária com opacidade e uma leve elevação.
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer.withOpacity(0.5),
+                          elevation: 2,
+                          child: Center(
+                            child: Text(
+                              'Outros cenários...',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.copyWith(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSecondaryContainer,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
             );
-          }), // .toList() removido - desnecessário com spread operator (...)
+          },
+          // Mostra indicador de carregamento.
+          loading: () => const Center(child: CircularProgressIndicator()),
+          // Mostra mensagem de erro.
+          error:
+              (error, stackTrace) => Center(
+                child: Text(
+                  'Erro ao carregar cenários: $error',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+        ),
       ],
     );
   }
 }
-
-// As definições das classes _OngoingAdventureCard, _AvailableScenarioCard,
-// _HighlightSectionWidget, _HighlightSectionWidgetState e _HighlightCard
-// foram movidas para seus próprios arquivos na pasta 'widgets/'.

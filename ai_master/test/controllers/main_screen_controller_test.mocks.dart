@@ -8,6 +8,8 @@ import 'dart:async' as _i4;
 import 'package:ai_master/models/adventure.dart' as _i5;
 import 'package:ai_master/models/chat_message.dart' as _i6;
 import 'package:ai_master/models/scenario.dart' as _i9;
+import 'package:ai_master/models/scenario_data.dart'
+    as _iS; // Adicionado import para ScenarioData
 import 'package:ai_master/repositories/adventure_repository.dart' as _i3;
 import 'package:ai_master/services/app_preferences.dart' as _i11;
 import 'package:ai_master/services/navigation_service.dart' as _i10;
@@ -141,12 +143,16 @@ class MockScenarioLoader extends _i1.Mock implements _i7.ScenarioLoader {
           as String);
 
   @override
-  _i4.Future<List<_i9.Scenario>> loadScenarios() =>
+  _i4.Future<List<_iS.ScenarioData>>
+  loadScenarios() => // Alterado para ScenarioData
       (super.noSuchMethod(
             Invocation.method(#loadScenarios, []),
-            returnValue: _i4.Future<List<_i9.Scenario>>.value(<_i9.Scenario>[]),
+            returnValue: _i4.Future<List<_iS.ScenarioData>>.value(
+              // Alterado para ScenarioData
+              <_iS.ScenarioData>[],
+            ), // Alterado para ScenarioData
           )
-          as _i4.Future<List<_i9.Scenario>>);
+          as _i4.Future<List<_iS.ScenarioData>>); // Alterado para ScenarioData
 }
 
 /// A class which mocks [NavigationService].

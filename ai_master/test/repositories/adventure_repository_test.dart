@@ -20,6 +20,7 @@ void main() {
   final testAdventure = Adventure(
     id: 'adv_test_001',
     scenarioTitle: 'Aventura de Teste', // Renomeado
+    adventureTitle: 'Aventura de Teste', // Adicionado
     gameState: '{"player_level": 1, "location": "start"}', // Renomeado
     lastPlayedDate: DateTime(2025, 4, 26).millisecondsSinceEpoch, // Renomeado
     syncStatus: 2, // Renomeado e Corrigido para int (ex: 2 = synced)
@@ -153,6 +154,7 @@ void main() {
       expect(result, isNotNull);
       expect(result!.id, testAdventure.id);
       expect(result.scenarioTitle, testAdventure.scenarioTitle); // Renomeado
+      expect(result.adventureTitle, testAdventure.adventureTitle); // Adicionado
       verify(
         mockDatabase.query(
           'Adventure', // Nome correto da tabela
@@ -190,9 +192,14 @@ void main() {
     });
 
     test('getAllAdventures should retrieve all from database', () async {
+      final testAdventure2 = testAdventure.copyWith(
+        id: 'adv_test_002',
+        scenarioTitle: 'Outra Aventura',
+        adventureTitle: 'Outra Aventura', // Adicionado
+      );
       final adventureListMap = [
-        testAdventureMap,
-        testAdventure.copyWith(id: 'adv_test_002').toMap(),
+        testAdventureMap, // Já inclui adventure_title por causa da atualização de testAdventure
+        testAdventure2.toMap(),
       ];
       when(
         mockDatabase.query(
@@ -206,7 +213,15 @@ void main() {
       expect(result, isA<List<Adventure>>());
       expect(result.length, 2);
       expect(result[0].id, testAdventure.id);
+      expect(
+        result[0].adventureTitle,
+        testAdventure.adventureTitle,
+      ); // Adicionado verificação
       expect(result[1].id, 'adv_test_002');
+      expect(
+        result[1].adventureTitle,
+        'Outra Aventura',
+      ); // Adicionado verificação
       verify(
         mockDatabase.query(
           'Adventure',

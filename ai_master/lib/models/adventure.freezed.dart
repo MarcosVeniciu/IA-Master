@@ -25,19 +25,27 @@ mixin _$Adventure {
   String get id => throw _privateConstructorUsedError;
 
   /// Título do cenário base da aventura.
-  String get scenarioTitle =>
-      throw _privateConstructorUsedError; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'scenario_title')
+  String get scenarioTitle => throw _privateConstructorUsedError;
+
+  /// Título específico desta instância da aventura, definido pelo usuário ou gerado.
+  @JsonKey(name: 'adventure_title')
+  String get adventureTitle => throw _privateConstructorUsedError;
+
   /// o progresso atual na aventura, um valor numerico entre 0.0 e 1.0 representando a porcentagem de progresso ( quantidade de cenas concluidas em relaçao ao total de cenas da aventura)
-  double? get progressIndicator =>
-      throw _privateConstructorUsedError; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'progress_indicator')
+  double? get progressIndicator => throw _privateConstructorUsedError;
+
   /// Estado completo do jogo serializado como uma string JSON.
   /// Inclui variáveis, status de personagens, inventário, etc.
-  String get gameState =>
-      throw _privateConstructorUsedError; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'game_state')
+  String get gameState => throw _privateConstructorUsedError;
+
   /// Timestamp da última vez que a aventura foi jogada ou modificada.
   /// Armazenado como milissegundos desde a época (Unix epoch).
-  int get lastPlayedDate =>
-      throw _privateConstructorUsedError; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'last_played_date')
+  int get lastPlayedDate => throw _privateConstructorUsedError;
+
   /// Status de sincronização da aventura com um backend (se aplicável).
   ///
   /// Valores possíveis:
@@ -45,12 +53,14 @@ mixin _$Adventure {
   /// - 1: Sincronizando.
   /// - 2: Sincronizado com sucesso.
   /// - -1: Erro durante a sincronização.
-  int get syncStatus =>
-      throw _privateConstructorUsedError; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'sync_status')
+  int get syncStatus => throw _privateConstructorUsedError;
+
   /// Lista de mensagens do chat associadas a esta aventura.
   /// Este campo é transiente e não é persistido diretamente na tabela Adventure.
   /// É carregado sob demanda pelo [AdventureRepository].
-  // @JsonKey removida do parâmetro, já que está no getter gerado.
+  // Marcamos para não incluir no JSON/mapa e não esperar do JSON/mapa
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<ChatMessage> get messages => throw _privateConstructorUsedError;
 
   /// Serializes this Adventure to a JSON map.
@@ -70,11 +80,13 @@ abstract class $AdventureCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String scenarioTitle,
-    double? progressIndicator,
-    String gameState,
-    int lastPlayedDate,
-    int syncStatus,
+    @JsonKey(name: 'scenario_title') String scenarioTitle,
+    @JsonKey(name: 'adventure_title') String adventureTitle,
+    @JsonKey(name: 'progress_indicator') double? progressIndicator,
+    @JsonKey(name: 'game_state') String gameState,
+    @JsonKey(name: 'last_played_date') int lastPlayedDate,
+    @JsonKey(name: 'sync_status') int syncStatus,
+    @JsonKey(includeFromJson: false, includeToJson: false)
     List<ChatMessage> messages,
   });
 }
@@ -96,6 +108,7 @@ class _$AdventureCopyWithImpl<$Res, $Val extends Adventure>
   $Res call({
     Object? id = null,
     Object? scenarioTitle = null,
+    Object? adventureTitle = null,
     Object? progressIndicator = freezed,
     Object? gameState = null,
     Object? lastPlayedDate = null,
@@ -113,6 +126,11 @@ class _$AdventureCopyWithImpl<$Res, $Val extends Adventure>
                 null == scenarioTitle
                     ? _value.scenarioTitle
                     : scenarioTitle // ignore: cast_nullable_to_non_nullable
+                        as String,
+            adventureTitle:
+                null == adventureTitle
+                    ? _value.adventureTitle
+                    : adventureTitle // ignore: cast_nullable_to_non_nullable
                         as String,
             progressIndicator:
                 freezed == progressIndicator
@@ -156,11 +174,13 @@ abstract class _$$AdventureImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    String scenarioTitle,
-    double? progressIndicator,
-    String gameState,
-    int lastPlayedDate,
-    int syncStatus,
+    @JsonKey(name: 'scenario_title') String scenarioTitle,
+    @JsonKey(name: 'adventure_title') String adventureTitle,
+    @JsonKey(name: 'progress_indicator') double? progressIndicator,
+    @JsonKey(name: 'game_state') String gameState,
+    @JsonKey(name: 'last_played_date') int lastPlayedDate,
+    @JsonKey(name: 'sync_status') int syncStatus,
+    @JsonKey(includeFromJson: false, includeToJson: false)
     List<ChatMessage> messages,
   });
 }
@@ -181,6 +201,7 @@ class __$$AdventureImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? scenarioTitle = null,
+    Object? adventureTitle = null,
     Object? progressIndicator = freezed,
     Object? gameState = null,
     Object? lastPlayedDate = null,
@@ -198,6 +219,11 @@ class __$$AdventureImplCopyWithImpl<$Res>
             null == scenarioTitle
                 ? _value.scenarioTitle
                 : scenarioTitle // ignore: cast_nullable_to_non_nullable
+                    as String,
+        adventureTitle:
+            null == adventureTitle
+                ? _value.adventureTitle
+                : adventureTitle // ignore: cast_nullable_to_non_nullable
                     as String,
         progressIndicator:
             freezed == progressIndicator
@@ -234,11 +260,13 @@ class __$$AdventureImplCopyWithImpl<$Res>
 class _$AdventureImpl extends _Adventure {
   const _$AdventureImpl({
     required this.id,
-    required this.scenarioTitle,
-    this.progressIndicator,
-    required this.gameState,
-    required this.lastPlayedDate,
-    this.syncStatus = 0,
+    @JsonKey(name: 'scenario_title') required this.scenarioTitle,
+    @JsonKey(name: 'adventure_title') required this.adventureTitle,
+    @JsonKey(name: 'progress_indicator') this.progressIndicator,
+    @JsonKey(name: 'game_state') required this.gameState,
+    @JsonKey(name: 'last_played_date') required this.lastPlayedDate,
+    @JsonKey(name: 'sync_status') this.syncStatus = 0,
+    @JsonKey(includeFromJson: false, includeToJson: false)
     final List<ChatMessage> messages = const [],
   }) : _messages = messages,
        super._();
@@ -252,22 +280,31 @@ class _$AdventureImpl extends _Adventure {
 
   /// Título do cenário base da aventura.
   @override
+  @JsonKey(name: 'scenario_title')
   final String scenarioTitle;
-  // @JsonKey removida do parâmetro
+
+  /// Título específico desta instância da aventura, definido pelo usuário ou gerado.
+  @override
+  @JsonKey(name: 'adventure_title')
+  final String adventureTitle;
+
   /// o progresso atual na aventura, um valor numerico entre 0.0 e 1.0 representando a porcentagem de progresso ( quantidade de cenas concluidas em relaçao ao total de cenas da aventura)
   @override
+  @JsonKey(name: 'progress_indicator')
   final double? progressIndicator;
-  // @JsonKey removida do parâmetro
+
   /// Estado completo do jogo serializado como uma string JSON.
   /// Inclui variáveis, status de personagens, inventário, etc.
   @override
+  @JsonKey(name: 'game_state')
   final String gameState;
-  // @JsonKey removida do parâmetro
+
   /// Timestamp da última vez que a aventura foi jogada ou modificada.
   /// Armazenado como milissegundos desde a época (Unix epoch).
   @override
+  @JsonKey(name: 'last_played_date')
   final int lastPlayedDate;
-  // @JsonKey removida do parâmetro
+
   /// Status de sincronização da aventura com um backend (se aplicável).
   ///
   /// Valores possíveis:
@@ -276,21 +313,21 @@ class _$AdventureImpl extends _Adventure {
   /// - 2: Sincronizado com sucesso.
   /// - -1: Erro durante a sincronização.
   @override
-  @JsonKey()
+  @JsonKey(name: 'sync_status')
   final int syncStatus;
-  // @JsonKey removida do parâmetro
+
   /// Lista de mensagens do chat associadas a esta aventura.
   /// Este campo é transiente e não é persistido diretamente na tabela Adventure.
   /// É carregado sob demanda pelo [AdventureRepository].
-  // @JsonKey removida do parâmetro, já que está no getter gerado.
+  // Marcamos para não incluir no JSON/mapa e não esperar do JSON/mapa
   final List<ChatMessage> _messages;
-  // @JsonKey removida do parâmetro
+
   /// Lista de mensagens do chat associadas a esta aventura.
   /// Este campo é transiente e não é persistido diretamente na tabela Adventure.
   /// É carregado sob demanda pelo [AdventureRepository].
-  // @JsonKey removida do parâmetro, já que está no getter gerado.
+  // Marcamos para não incluir no JSON/mapa e não esperar do JSON/mapa
   @override
-  @JsonKey()
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<ChatMessage> get messages {
     if (_messages is EqualUnmodifiableListView) return _messages;
     // ignore: implicit_dynamic_type
@@ -299,7 +336,7 @@ class _$AdventureImpl extends _Adventure {
 
   @override
   String toString() {
-    return 'Adventure(id: $id, scenarioTitle: $scenarioTitle, progressIndicator: $progressIndicator, gameState: $gameState, lastPlayedDate: $lastPlayedDate, syncStatus: $syncStatus, messages: $messages)';
+    return 'Adventure(id: $id, scenarioTitle: $scenarioTitle, adventureTitle: $adventureTitle, progressIndicator: $progressIndicator, gameState: $gameState, lastPlayedDate: $lastPlayedDate, syncStatus: $syncStatus, messages: $messages)';
   }
 
   @override
@@ -310,6 +347,8 @@ class _$AdventureImpl extends _Adventure {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.scenarioTitle, scenarioTitle) ||
                 other.scenarioTitle == scenarioTitle) &&
+            (identical(other.adventureTitle, adventureTitle) ||
+                other.adventureTitle == adventureTitle) &&
             (identical(other.progressIndicator, progressIndicator) ||
                 other.progressIndicator == progressIndicator) &&
             (identical(other.gameState, gameState) ||
@@ -327,6 +366,7 @@ class _$AdventureImpl extends _Adventure {
     runtimeType,
     id,
     scenarioTitle,
+    adventureTitle,
     progressIndicator,
     gameState,
     lastPlayedDate,
@@ -351,11 +391,13 @@ class _$AdventureImpl extends _Adventure {
 abstract class _Adventure extends Adventure {
   const factory _Adventure({
     required final String id,
-    required final String scenarioTitle,
-    final double? progressIndicator,
-    required final String gameState,
-    required final int lastPlayedDate,
-    final int syncStatus,
+    @JsonKey(name: 'scenario_title') required final String scenarioTitle,
+    @JsonKey(name: 'adventure_title') required final String adventureTitle,
+    @JsonKey(name: 'progress_indicator') final double? progressIndicator,
+    @JsonKey(name: 'game_state') required final String gameState,
+    @JsonKey(name: 'last_played_date') required final int lastPlayedDate,
+    @JsonKey(name: 'sync_status') final int syncStatus,
+    @JsonKey(includeFromJson: false, includeToJson: false)
     final List<ChatMessage> messages,
   }) = _$AdventureImpl;
   const _Adventure._() : super._();
@@ -369,18 +411,31 @@ abstract class _Adventure extends Adventure {
 
   /// Título do cenário base da aventura.
   @override
-  String get scenarioTitle; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'scenario_title')
+  String get scenarioTitle;
+
+  /// Título específico desta instância da aventura, definido pelo usuário ou gerado.
+  @override
+  @JsonKey(name: 'adventure_title')
+  String get adventureTitle;
+
   /// o progresso atual na aventura, um valor numerico entre 0.0 e 1.0 representando a porcentagem de progresso ( quantidade de cenas concluidas em relaçao ao total de cenas da aventura)
   @override
-  double? get progressIndicator; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'progress_indicator')
+  double? get progressIndicator;
+
   /// Estado completo do jogo serializado como uma string JSON.
   /// Inclui variáveis, status de personagens, inventário, etc.
   @override
-  String get gameState; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'game_state')
+  String get gameState;
+
   /// Timestamp da última vez que a aventura foi jogada ou modificada.
   /// Armazenado como milissegundos desde a época (Unix epoch).
   @override
-  int get lastPlayedDate; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'last_played_date')
+  int get lastPlayedDate;
+
   /// Status de sincronização da aventura com um backend (se aplicável).
   ///
   /// Valores possíveis:
@@ -389,12 +444,15 @@ abstract class _Adventure extends Adventure {
   /// - 2: Sincronizado com sucesso.
   /// - -1: Erro durante a sincronização.
   @override
-  int get syncStatus; // @JsonKey removida do parâmetro
+  @JsonKey(name: 'sync_status')
+  int get syncStatus;
+
   /// Lista de mensagens do chat associadas a esta aventura.
   /// Este campo é transiente e não é persistido diretamente na tabela Adventure.
   /// É carregado sob demanda pelo [AdventureRepository].
-  // @JsonKey removida do parâmetro, já que está no getter gerado.
+  // Marcamos para não incluir no JSON/mapa e não esperar do JSON/mapa
   @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<ChatMessage> get messages;
 
   /// Create a copy of Adventure

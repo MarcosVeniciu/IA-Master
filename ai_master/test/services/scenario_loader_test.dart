@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ai_master/models/scenario.dart'; // Ajuste o caminho se necessário
+import 'package:ai_master/models/scenario.dart'; // Ainda necessário para o objeto Scenario dentro de ScenarioData
+import 'package:ai_master/models/scenario_data.dart'; // Importa ScenarioData
 import 'package:ai_master/services/scenario_loader.dart'; // Ajuste o caminho se necessário
 import 'package:path/path.dart' as p; // Para manipulação de caminhos
 
@@ -61,21 +62,29 @@ void main() {
       () async {
         // Aponta o loader para o diretório com o JSON de teste existente
         final loader = ScenarioLoader(scenariosFolderPath: existingTestDataDir);
-        final scenarios = await loader.loadScenarios();
+        final scenarios =
+            await loader.loadScenarios(); // Agora retorna List<ScenarioData>
 
-        expect(scenarios, isA<List<Scenario>>());
+        expect(scenarios, isA<List<ScenarioData>>()); // Verifica o novo tipo
         // Verifica se pelo menos um cenário foi carregado (o arquivo de teste)
         expect(scenarios, isNotEmpty);
         // Verifica se o cenário carregado tem o título esperado
-        final loadedScenario = scenarios.firstWhere(
-          (s) => s.title == "Dominus & Dragons",
+        final loadedScenarioData = scenarios.firstWhere(
+          (sd) =>
+              sd.scenario.title ==
+              "Dominus & Dragons", // Acessa via sd.scenario
           orElse: () => throw StateError('Cenário esperado não encontrado'),
         );
-        expect(loadedScenario.author, "Jefferson Pimentel");
         expect(
-          loadedScenario.ambiance,
+          loadedScenarioData.scenario.author,
+          "Jefferson Pimentel",
+        ); // Acessa via .scenario
+        expect(
+          loadedScenarioData.scenario.ambiance, // Acessa via .scenario
           contains("Neste jogo, você é um Aventureiro"),
         );
+        // Opcionalmente, verificar se decodedImageBytes é null ou não, se relevante para o teste
+        // expect(loadedScenarioData.decodedImageBytes, isNotNull); // Exemplo
       },
     );
 
@@ -84,13 +93,14 @@ void main() {
       () async {
         // Aponta o loader para o diretório temporário misto
         final loader = ScenarioLoader(scenariosFolderPath: tempMixedDir.path);
-        final scenarios = await loader.loadScenarios();
+        final scenarios =
+            await loader.loadScenarios(); // Agora retorna List<ScenarioData>
 
-        expect(scenarios, isA<List<Scenario>>());
+        expect(scenarios, isA<List<ScenarioData>>()); // Verifica o novo tipo
         // Deve carregar apenas o arquivo JSON, ignorando o .txt
         expect(scenarios.length, 1);
         expect(
-          scenarios.first.title,
+          scenarios.first.scenario.title, // Acessa via .scenario
           "Dominus & Dragons",
         ); // Verifica se é o cenário correto
       },

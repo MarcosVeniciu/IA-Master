@@ -7,34 +7,40 @@ Representa uma aventura em andamento que o jogador já iniciou.
 ```mermaid
 classDiagram
     class Adventure {
-        +String id  // Identificador único para buscar no DB local
-        +String scenarioTitle // Título do cenário original (RF-002)
-        +String progressIndicator // Ex: "Scene 3", "50%" (RF-002)
-        +Object gameState // Estado atual do jogo (RNF-008) - Tipo a definir
-        +List~String~ chatHistory // Histórico da conversa (RNF-008) - Tipo a definir
-        +DateTime lastPlayedDate // Data da última interação
-        +loadState() void // Placeholder: Carrega estado completo
-        +saveState() void // Placeholder: Salva estado atual
+        +String id
+        +String scenarioTitle
+        +String adventureTitle // Título específico da instância da aventura
+        +double? progressIndicator // Progresso numérico (0.0 a 1.0)
+        +String gameState // Estado do jogo serializado em JSON
+        +int lastPlayedDate // Timestamp da última interação (ms since epoch)
+        +int syncStatus // Status de sincronização (0=local, 1=syncing, 2=synced, -1=error)
+        +List~ChatMessage~ messages // Lista de mensagens (transiente, não persistida aqui)
+        +Adventure.fromJson(Map~String, dynamic~) Adventure // Factory from JSON
+        +Adventure.fromMap(Map~String, dynamic~) Adventure // Factory from DB Map
+        +toMap() Map~String, dynamic~ // Converte para DB Map
     }
-    %% Nota: Uma Adventure é baseada em um Scenario (definido separadamente).
-    %% Para a Main Screen, apenas o scenarioTitle é diretamente necessário.
+    Adventure --|> ChatMessage : contains (transient)
+    %% Nota: Uma Adventure é baseada em um Scenario.
     %% Adventure ..> Scenario : (based on)
 
 ```
 
 **Atributos:**
 
-*   `id`: Identificador único para recuperar a aventura salva (RNF-008).
-*   `scenarioTitle`: Título do cenário associado (RF-002).
-*   `progressIndicator`: Uma string que descreve o progresso atual (RF-002).
-*   `gameState`: Objeto/estrutura contendo o estado atual do jogo (RNF-008).
-*   `chatHistory`: Lista/estrutura contendo o histórico da conversa (RNF-008).
-*   `lastPlayedDate`: Data/hora da última vez que a aventura foi jogada.
+*   `id`: Identificador único (UUID) da aventura.
+*   `scenarioTitle`: Título do cenário base no qual a aventura foi iniciada.
+*   `adventureTitle`: Título específico definido para esta instância da aventura.
+*   `progressIndicator`: Valor numérico opcional (0.0 a 1.0) indicando o progresso.
+*   `gameState`: String JSON contendo o estado completo serializado do jogo.
+*   `lastPlayedDate`: Timestamp (inteiro, milissegundos desde a época Unix) da última interação.
+*   `syncStatus`: Inteiro indicando o status de sincronização (0=local, 1=syncing, 2=synced, -1=error). Padrão 0.
+*   `messages`: Lista de objetos `ChatMessage` associados. Este campo é transiente e carregado sob demanda, não sendo persistido diretamente na tabela `Adventure`. Padrão `[]`.
 
 **Métodos:**
 
-*   `loadState()`: Placeholder para carregar dados detalhados da aventura.
-*   `saveState()`: Placeholder para salvar o estado atual da aventura.
+*   `Adventure.fromJson()`: Factory para criar uma instância a partir de um mapa JSON.
+*   `Adventure.fromMap()`: Factory para criar uma instância a partir de um mapa vindo do SQFlite.
+*   `toMap()`: Converte a instância em um mapa adequado para persistência no SQFlite (excluindo campos transientes como `messages`).
 
 **Relacionamentos:**
 

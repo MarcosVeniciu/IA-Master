@@ -31,13 +31,25 @@ class AdventureRepository {
   /// - [adventure]: A aventura a ser salva.
   /// Retorna uma [Future] que completa quando a operação é concluída.
   Future<void> saveAdventure(Adventure adventure) async {
-    final db = await _dbHelper.database;
-    await db.insert(
-      'Adventure',
-      adventure.toMap(),
-      conflictAlgorithm:
-          ConflictAlgorithm.replace, // Substitui se já existir ID
-    );
+    print('[REPO] Iniciando saveAdventure para ID: ${adventure.id}');
+    try {
+      final db = await _dbHelper.database;
+      print(
+        '[REPO] saveAdventure: Obtido DB. Inserindo/Substituindo Adventure...',
+      );
+      await db.insert(
+        'Adventure',
+        adventure.toMap(),
+        conflictAlgorithm:
+            ConflictAlgorithm.replace, // Substitui se já existir ID
+      );
+      print(
+        '[REPO] saveAdventure concluído com sucesso para ID: ${adventure.id}',
+      );
+    } catch (e) {
+      print('[REPO] ERRO em saveAdventure (ID: ${adventure.id}): $e');
+      rethrow;
+    }
   }
 
   /// Atualiza uma [Adventure] existente no banco de dados.
@@ -45,13 +57,23 @@ class AdventureRepository {
   /// - [adventure]: A aventura com os dados atualizados.
   /// Retorna uma [Future] que completa quando a operação é concluída.
   Future<void> updateAdventure(Adventure adventure) async {
-    final db = await _dbHelper.database;
-    await db.update(
-      'Adventure',
-      adventure.toMap(),
-      where: 'id = ?',
-      whereArgs: [adventure.id],
-    );
+    print('[REPO] Iniciando updateAdventure para ID: ${adventure.id}');
+    try {
+      final db = await _dbHelper.database;
+      print('[REPO] updateAdventure: Obtido DB. Atualizando Adventure...');
+      await db.update(
+        'Adventure',
+        adventure.toMap(),
+        where: 'id = ?',
+        whereArgs: [adventure.id],
+      );
+      print(
+        '[REPO] updateAdventure concluído com sucesso para ID: ${adventure.id}',
+      );
+    } catch (e) {
+      print('[REPO] ERRO em updateAdventure (ID: ${adventure.id}): $e');
+      rethrow;
+    }
   }
 
   /// Busca uma [Adventure] pelo seu ID.
@@ -63,18 +85,31 @@ class AdventureRepository {
   /// Retorna uma [Future] que completa com a [Adventure] encontrada ou `null`
   /// se nenhuma aventura com o ID fornecido for encontrada.
   Future<Adventure?> getAdventure(String id) async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'Adventure',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1, // Espera-se apenas um resultado
-    );
+    print('[REPO] Iniciando getAdventure para ID: $id');
+    try {
+      final db = await _dbHelper.database;
+      print('[REPO] getAdventure: Obtido DB. Consultando Adventure...');
+      final List<Map<String, dynamic>> maps = await db.query(
+        'Adventure',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1, // Espera-se apenas um resultado
+      );
+      print(
+        '[REPO] getAdventure: Consulta concluída. ${maps.length} registro(s) encontrado(s).',
+      );
 
-    if (maps.isNotEmpty) {
-      return Adventure.fromMap(maps.first);
-    } else {
-      return null;
+      if (maps.isNotEmpty) {
+        final adventure = Adventure.fromMap(maps.first);
+        print('[REPO] getAdventure: Aventura encontrada e mapeada (ID: $id).');
+        return adventure;
+      } else {
+        print('[REPO] getAdventure: Nenhuma aventura encontrada com ID: $id.');
+        return null;
+      }
+    } catch (e) {
+      print('[REPO] ERRO em getAdventure (ID: $id): $e');
+      rethrow;
     }
   }
 
@@ -85,15 +120,31 @@ class AdventureRepository {
   ///
   /// Retorna uma [Future] que completa com a lista de [Adventure].
   Future<List<Adventure>> getAllAdventures() async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'Adventure',
-      orderBy: 'last_played_date DESC', // Ordena pela data mais recente
-    );
+    print('[REPO] Iniciando getAllAdventures...');
+    try {
+      final db = await _dbHelper.database;
+      print(
+        '[REPO] getAllAdventures: Obtido DB. Consultando todas as Adventures...',
+      );
+      final List<Map<String, dynamic>> maps = await db.query(
+        'Adventure',
+        orderBy: 'last_played_date DESC', // Ordena pela data mais recente
+      );
+      print(
+        '[REPO] getAllAdventures: Consulta concluída. ${maps.length} registro(s) encontrado(s).',
+      );
 
-    return List.generate(maps.length, (i) {
-      return Adventure.fromMap(maps[i]);
-    });
+      final adventures = List.generate(maps.length, (i) {
+        return Adventure.fromMap(maps[i]);
+      });
+      print(
+        '[REPO] getAllAdventures: Mapeamento concluído. Retornando ${adventures.length} aventura(s).',
+      );
+      return adventures;
+    } catch (e) {
+      print('[REPO] ERRO em getAllAdventures: $e');
+      rethrow;
+    }
   }
 
   /// Deleta uma [Adventure] e todas as suas [ChatMessage] associadas do banco de dados.
@@ -104,8 +155,16 @@ class AdventureRepository {
   /// - [id]: O ID da aventura a ser deletada.
   /// Retorna uma [Future] que completa quando a operação é concluída.
   Future<void> deleteAdventure(String id) async {
-    final db = await _dbHelper.database;
-    await db.delete('Adventure', where: 'id = ?', whereArgs: [id]);
+    print('[REPO] Iniciando deleteAdventure para ID: $id');
+    try {
+      final db = await _dbHelper.database;
+      print('[REPO] deleteAdventure: Obtido DB. Deletando Adventure...');
+      await db.delete('Adventure', where: 'id = ?', whereArgs: [id]);
+      print('[REPO] deleteAdventure concluído com sucesso para ID: $id.');
+    } catch (e) {
+      print('[REPO] ERRO em deleteAdventure (ID: $id): $e');
+      rethrow;
+    }
   }
 
   // --- Operações para ChatMessage ---
@@ -115,13 +174,27 @@ class AdventureRepository {
   /// - [message]: A mensagem a ser salva.
   /// Retorna uma [Future] que completa quando a operação é concluída.
   Future<void> saveChatMessage(ChatMessage message) async {
-    final db = await _dbHelper.database;
-    await db.insert(
-      'ChatMessage',
-      message.toMap(),
-      conflictAlgorithm:
-          ConflictAlgorithm.replace, // Substitui se já existir ID
+    print(
+      '[REPO] Iniciando saveChatMessage para ID: ${message.id} (Adventure ID: ${message.adventureId})',
     );
+    try {
+      final db = await _dbHelper.database;
+      print(
+        '[REPO] saveChatMessage: Obtido DB. Inserindo/Substituindo ChatMessage...',
+      );
+      await db.insert(
+        'ChatMessage',
+        message.toMap(),
+        conflictAlgorithm:
+            ConflictAlgorithm.replace, // Substitui se já existir ID
+      );
+      print(
+        '[REPO] saveChatMessage concluído com sucesso para ID: ${message.id}',
+      );
+    } catch (e) {
+      print('[REPO] ERRO em saveChatMessage (ID: ${message.id}): $e');
+      rethrow;
+    }
   }
 
   /// Busca todas as [ChatMessage] associadas a uma [Adventure] específica.
@@ -133,17 +206,35 @@ class AdventureRepository {
   Future<List<ChatMessage>> getChatMessagesForAdventure(
     String adventureId,
   ) async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'ChatMessage',
-      where: 'adventure_id = ?',
-      whereArgs: [adventureId],
-      orderBy: 'timestamp ASC', // Ordena cronologicamente
+    print(
+      '[REPO] Iniciando getChatMessagesForAdventure para Adventure ID: $adventureId',
     );
+    try {
+      final db = await _dbHelper.database;
+      print('[REPO] getChatMessages: Obtido DB. Consultando ChatMessages...');
+      final List<Map<String, dynamic>> maps = await db.query(
+        'ChatMessage',
+        where: 'adventure_id = ?',
+        whereArgs: [adventureId],
+        orderBy: 'timestamp ASC', // Ordena cronologicamente
+      );
+      print(
+        '[REPO] getChatMessages: Consulta concluída. ${maps.length} registro(s) encontrado(s).',
+      );
 
-    return List.generate(maps.length, (i) {
-      return ChatMessage.fromMap(maps[i]);
-    });
+      final messages = List.generate(maps.length, (i) {
+        return ChatMessage.fromMap(maps[i]);
+      });
+      print(
+        '[REPO] getChatMessages: Mapeamento concluído. Retornando ${messages.length} mensagem(ns).',
+      );
+      return messages;
+    } catch (e) {
+      print(
+        '[REPO] ERRO em getChatMessagesForAdventure (Adventure ID: $adventureId): $e',
+      );
+      rethrow;
+    }
   }
 
   // --- Operações Combinadas ---
@@ -154,14 +245,33 @@ class AdventureRepository {
   /// Retorna uma [Future] que completa com a [Adventure] completa (com mensagens)
   /// ou `null` se nenhuma aventura com o ID fornecido for encontrada.
   Future<Adventure?> getFullAdventure(String id) async {
-    final adventure = await getAdventure(id);
-    if (adventure != null) {
-      final messages = await getChatMessagesForAdventure(id);
-      // Usa copyWith (gerado pelo freezed) para criar uma nova instância
-      // com a lista de mensagens preenchida.
-      return adventure.copyWith(messages: messages);
-    } else {
-      return null;
+    print('[REPO] Iniciando getFullAdventure para ID: $id');
+    try {
+      final adventure = await getAdventure(id); // Já tem logs internos
+      if (adventure != null) {
+        print(
+          '[REPO] getFullAdventure: Aventura base encontrada. Buscando mensagens...',
+        );
+        final messages = await getChatMessagesForAdventure(
+          id,
+        ); // Já tem logs internos
+        print(
+          '[REPO] getFullAdventure: Mensagens encontradas (${messages.length}). Combinando...',
+        );
+        // Usa copyWith (gerado pelo freezed) para criar uma nova instância
+        // com a lista de mensagens preenchida.
+        final fullAdventure = adventure.copyWith(messages: messages);
+        print('[REPO] getFullAdventure concluído com sucesso para ID: $id.');
+        return fullAdventure;
+      } else {
+        print(
+          '[REPO] getFullAdventure: Aventura base não encontrada com ID: $id. Retornando null.',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('[REPO] ERRO em getFullAdventure (ID: $id): $e');
+      rethrow;
     }
   }
 }

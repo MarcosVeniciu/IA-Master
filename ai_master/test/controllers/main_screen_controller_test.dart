@@ -4,6 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:ai_master/controllers/main_screen_controller.dart';
 import 'package:ai_master/models/adventure.dart';
 import 'package:ai_master/models/scenario.dart';
+import 'package:ai_master/models/scenario_data.dart'; // Importa ScenarioData
 import 'package:ai_master/repositories/adventure_repository.dart';
 import 'package:ai_master/services/app_preferences.dart';
 import 'package:ai_master/services/navigation_service.dart';
@@ -69,11 +70,23 @@ void main() {
     license: 'MIT',
     credits: 'Credits 2',
   );
-  final tAvailableScenarios = [tScenario1, tScenario2];
+  // final tAvailableScenarios = [tScenario1, tScenario2]; // Removido, será tAvailableScenariosData
+
+  // Cria instâncias de ScenarioData para os testes
+  final tScenarioData1 = ScenarioData(
+    scenario: tScenario1,
+    decodedImageBytes: null,
+  );
+  final tScenarioData2 = ScenarioData(
+    scenario: tScenario2,
+    decodedImageBytes: null,
+  );
+  final tAvailableScenariosData = [tScenarioData1, tScenarioData2];
 
   final tAdventure1 = Adventure(
     id: 'adv1',
     scenarioTitle: 'Scenario 1', // Renomeado
+    adventureTitle: 'Scenario 1', // Adicionado
     gameState: '{}', // Renomeado
     lastPlayedDate: DateTime.now().millisecondsSinceEpoch, // Renomeado
     progressIndicator: 0.1, // Renomeado e Alterado para double? (10%)
@@ -81,6 +94,7 @@ void main() {
   final tAdventure2 = Adventure(
     id: 'adv2',
     scenarioTitle: 'Scenario 2', // Renomeado
+    adventureTitle: 'Scenario 2', // Adicionado
     gameState: '{}', // Renomeado
     lastPlayedDate: DateTime.now().millisecondsSinceEpoch - 10000, // Renomeado
     progressIndicator: 0.5, // Renomeado e Alterado para double? (50%)
@@ -111,7 +125,7 @@ void main() {
       adventureRepo: mockAdventureRepo,
       scenarioLoader: mockScenarioLoader,
       navigationService: mockNavigationService,
-      appPreferences: mockAppPreferences,
+      // appPreferences: mockAppPreferences, // Removido
       // uuid: mockUuid, // Se Uuid fosse injetado
     );
 
@@ -125,291 +139,22 @@ void main() {
     when(
       mockAdventureRepo.getAllAdventures(),
     ).thenAnswer((_) async => tOngoingAdventures);
-    when(
-      mockScenarioLoader.loadScenarios(),
-    ).thenAnswer((_) async => tAvailableScenarios);
+    when(mockScenarioLoader.loadScenarios()).thenAnswer(
+      (_) async => tAvailableScenariosData,
+    ); // Alterado para tAvailableScenariosData
     // Configuração padrão para salvar aventura (sucesso)
     when(
       mockAdventureRepo.saveAdventure(any),
     ).thenAnswer((_) async => {}); // Retorna Future<void>
   });
 
-  // --- Testes de Inicialização ---
+  // --- Testes de Inicialização (REMOVIDOS) ---
+  // O método initialize foi removido do controller.
 
-  group('initialize', () {
-    test(
-      'deve chamar checkFirstLaunch e depois loadData na inicialização',
-      () async {
-        // Arrange
-        when(mockAppPreferences.isFirstLaunch()).thenAnswer((_) async => false);
-        when(
-          mockAdventureRepo.getAllAdventures(),
-        ).thenAnswer((_) async => tOngoingAdventures);
-        when(
-          mockScenarioLoader.loadScenarios(),
-        ).thenAnswer((_) async => tAvailableScenarios);
-
-        // Act
-        await controller.initialize();
-
-        // Assert
-        // Verifica se as chamadas ocorreram na ordem esperada (individualmente)
-        verify(mockAppPreferences.isFirstLaunch()).called(1);
-        // Espera um pouco para garantir que as chamadas assíncronas de loadData tenham chance de ocorrer
-        await Future.delayed(Duration.zero);
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-        verifyNever(
-          mockAppPreferences.setFirstLaunchCompleted(),
-        ); // Usa verifyNever
-      },
-    );
-
-    test(
-      'deve chamar setFirstLaunchCompleted quando for o primeiro lançamento',
-      () async {
-        // Arrange
-        when(
-          mockAppPreferences.isFirstLaunch(),
-        ).thenAnswer((_) async => true); // É o primeiro lançamento
-        when(
-          mockAdventureRepo.getAllAdventures(),
-        ).thenAnswer((_) async => tOngoingAdventures);
-        when(
-          mockScenarioLoader.loadScenarios(),
-        ).thenAnswer((_) async => tAvailableScenarios);
-
-        // Act
-        await controller.initialize();
-
-        // Assert
-        verify(mockAppPreferences.isFirstLaunch()).called(1);
-        verify(
-          mockAppPreferences.setFirstLaunchCompleted(),
-        ).called(1); // Deve ser chamado
-        // Espera um pouco
-        await Future.delayed(Duration.zero);
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-      },
-    );
-
-    test(
-      'deve lidar com erro ao verificar first launch e continuar a carregar dados',
-      () async {
-        // Arrange
-        final tError = Exception('Failed to read preferences');
-        when(
-          mockAppPreferences.isFirstLaunch(),
-        ).thenThrow(tError); // Simula erro
-        when(
-          mockAdventureRepo.getAllAdventures(),
-        ).thenAnswer((_) async => tOngoingAdventures);
-        when(
-          mockScenarioLoader.loadScenarios(),
-        ).thenAnswer((_) async => tAvailableScenarios);
-
-        // Act
-        await controller.initialize();
-
-        // Assert
-        // Verifica que, mesmo com erro no first launch, loadData é chamado
-        verify(mockAppPreferences.isFirstLaunch()).called(1);
-        verifyNever(
-          mockAppPreferences.setFirstLaunchCompleted(),
-        ); // Usa verifyNever
-        // Espera um pouco
-        await Future.delayed(Duration.zero);
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-        // O estado de erro não é explicitamente gerenciado para first launch no controller,
-        // ele apenas imprime no debug e continua.
-      },
-    );
-  });
-
-  // --- Testes de Carregamento de Dados ---
-
-  group('loadData', () {
-    test(
-      'deve carregar aventuras e cenários com sucesso e notificar listeners',
-      () async {
-        // Arrange
-        int listenerCallCount = 0;
-        controller.addListener(() {
-          listenerCallCount++;
-          // Verificações de estado na última notificação (ajustado para 6)
-          if (listenerCallCount == 6) {
-            // Última notificação esperada
-            expect(controller.isLoadingAdventures, isFalse);
-            expect(controller.isLoadingScenarios, isFalse);
-            expect(controller.scenarioLoadingError, isNull);
-            expect(controller.ongoingAdventures, tOngoingAdventures);
-            expect(controller.availableScenarios, tAvailableScenarios);
-          }
-        });
-
-        // Act
-        await controller.loadData();
-
-        // Assert
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-        expect(listenerCallCount, 6); // Ajustado para 6 notificações
-        // Verifica o estado final fora do listener também
-        expect(controller.isLoadingAdventures, isFalse);
-        expect(controller.isLoadingScenarios, isFalse);
-        expect(controller.ongoingAdventures, tOngoingAdventures);
-        expect(controller.availableScenarios, tAvailableScenarios);
-        expect(controller.scenarioLoadingError, isNull);
-      },
-    );
-
-    test(
-      'deve lidar com erro ao carregar aventuras e carregar cenários normalmente',
-      () async {
-        // Arrange
-        final tError = Exception('Failed to load adventures');
-        when(
-          mockAdventureRepo.getAllAdventures(),
-        ).thenThrow(tError); // Simula erro
-        when(
-          mockScenarioLoader.loadScenarios(),
-        ).thenAnswer((_) async => tAvailableScenarios); // Cenários carregam ok
-
-        int listenerCallCount = 0;
-        controller.addListener(() {
-          listenerCallCount++;
-          if (listenerCallCount == 6) {
-            // Última notificação esperada
-            expect(
-              controller.isLoadingAdventures,
-              isFalse,
-            ); // Terminou (com erro)
-            expect(
-              controller.isLoadingScenarios,
-              isFalse,
-            ); // Terminou (com sucesso)
-            expect(
-              controller.ongoingAdventures,
-              isEmpty,
-            ); // Lista vazia devido ao erro
-            expect(
-              controller.availableScenarios,
-              tAvailableScenarios,
-            ); // Cenários carregados
-            expect(
-              controller.scenarioLoadingError,
-              isNull,
-            ); // Nenhum erro de cenário
-          }
-        });
-
-        // Act
-        await controller.loadData();
-
-        // Assert
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-        expect(listenerCallCount, 6); // Ajustado para 6
-        // Verifica estado final
-        expect(controller.ongoingAdventures, isEmpty);
-        expect(controller.availableScenarios, tAvailableScenarios);
-        expect(controller.scenarioLoadingError, isNull);
-      },
-    );
-
-    test(
-      'deve lidar com erro ao carregar cenários e definir mensagem de erro',
-      () async {
-        // Arrange
-        final tError = Exception('Failed to load scenarios');
-        when(
-          mockAdventureRepo.getAllAdventures(),
-        ).thenAnswer((_) async => tOngoingAdventures); // Aventuras carregam ok
-        when(
-          mockScenarioLoader.loadScenarios(),
-        ).thenThrow(tError); // Simula erro
-
-        int listenerCallCount = 0;
-        controller.addListener(() {
-          listenerCallCount++;
-          if (listenerCallCount == 6) {
-            // Última notificação esperada
-            expect(
-              controller.isLoadingAdventures,
-              isFalse,
-            ); // Terminou (com sucesso)
-            expect(
-              controller.isLoadingScenarios,
-              isFalse,
-            ); // Terminou (com erro)
-            expect(
-              controller.ongoingAdventures,
-              tOngoingAdventures,
-            ); // Aventuras carregadas
-            expect(
-              controller.availableScenarios,
-              isEmpty,
-            ); // Lista vazia devido ao erro
-            expect(controller.scenarioLoadingError, isNotNull); // Erro definido
-            expect(
-              controller.scenarioLoadingError,
-              'Failed to load scenarios. Please try again.',
-            );
-          }
-        });
-
-        // Act
-        await controller.loadData();
-
-        // Assert
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-        expect(listenerCallCount, 6); // Ajustado para 6
-        // Verifica estado final
-        expect(controller.ongoingAdventures, tOngoingAdventures);
-        expect(controller.availableScenarios, isEmpty);
-        expect(controller.scenarioLoadingError, isNotNull);
-      },
-    );
-
-    test(
-      'deve lidar com erro ao carregar ambos, aventuras e cenários',
-      () async {
-        // Arrange
-        final tAdventureError = Exception('Failed to load adventures');
-        final tScenarioError = Exception('Failed to load scenarios');
-        when(mockAdventureRepo.getAllAdventures()).thenThrow(tAdventureError);
-        when(mockScenarioLoader.loadScenarios()).thenThrow(tScenarioError);
-
-        int listenerCallCount = 0;
-        controller.addListener(() {
-          listenerCallCount++;
-          if (listenerCallCount == 6) {
-            // Última notificação esperada
-            expect(controller.isLoadingAdventures, isFalse);
-            expect(controller.isLoadingScenarios, isFalse);
-            expect(controller.ongoingAdventures, isEmpty);
-            expect(controller.availableScenarios, isEmpty);
-            expect(controller.scenarioLoadingError, isNotNull);
-          }
-        });
-
-        // Act
-        await controller.loadData();
-
-        // Assert
-        verify(mockAdventureRepo.getAllAdventures()).called(1);
-        verify(mockScenarioLoader.loadScenarios()).called(1);
-        expect(listenerCallCount, 6); // Ajustado para 6
-        // Verifica estado final
-        expect(controller.ongoingAdventures, isEmpty);
-        expect(controller.availableScenarios, isEmpty);
-        expect(controller.scenarioLoadingError, isNotNull);
-      },
-    );
-  });
+  // --- Testes de Carregamento de Dados (REMOVIDOS) ---
+  // O método loadData e a lógica de estado foram removidos do controller.
+  // Os testes de estado agora devem ser feitos no nível do widget (widget_test.dart)
+  // ou testando os providers diretamente (se necessário).
 
   // --- Testes de Ações de Navegação ---
 
@@ -448,6 +193,10 @@ void main() {
         // Assumindo que a lógica interna cria a aventura corretamente:
         expect(savedAdventure.id, isNotNull); // ID deve ser gerado
         expect(savedAdventure.scenarioTitle, tScenario1.title); // Renomeado
+        expect(
+          savedAdventure.adventureTitle,
+          tScenario1.title,
+        ); // Adicionado - verifica se usou o título do cenário
         expect(savedAdventure.gameState, '{}'); // Renomeado
         expect(
           savedAdventure.progressIndicator,

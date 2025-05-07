@@ -9,6 +9,8 @@ void main() {
     // Dados de exemplo para os testes
     final testId = 'adv_002';
     final testScenarioTitle = 'Cavernas de Cristal';
+    final testAdventureTitle =
+        'Cavernas de Cristal'; // Adicionado para o novo campo
     final double testProgressIndicator =
         0.5; // Removido '?' - inicializado com não nulo
     // gameState agora é uma string JSON
@@ -27,6 +29,7 @@ void main() {
     final adventure = Adventure(
       id: testId,
       scenarioTitle: testScenarioTitle, // Renomeado
+      adventureTitle: testAdventureTitle, // Adicionado
       progressIndicator: testProgressIndicator, // Renomeado
       gameState: testGameStateJson, // Renomeado
       lastPlayedDate: testLastPlayedTimestamp, // Renomeado
@@ -39,6 +42,10 @@ void main() {
       () {
         expect(adventure.id, equals(testId));
         expect(adventure.scenarioTitle, equals(testScenarioTitle)); // Renomeado
+        expect(
+          adventure.adventureTitle,
+          equals(testAdventureTitle),
+        ); // Adicionado
         expect(
           adventure.progressIndicator,
           equals(testProgressIndicator),
@@ -62,6 +69,7 @@ void main() {
       final jsonMap = {
         'id': testId,
         'scenario_title': testScenarioTitle, // Mantém snake_case no JSON
+        'adventure_title': testAdventureTitle, // Adicionado snake_case no JSON
         'progress_indicator':
             testProgressIndicator, // Mantém snake_case no JSON
         'game_state': testGameStateJson, // Mantém snake_case no JSON
@@ -78,6 +86,10 @@ void main() {
         adventureFromJson.scenarioTitle,
         equals(testScenarioTitle),
       ); // Renomeado
+      expect(
+        adventureFromJson.adventureTitle, // Adicionado
+        equals(testAdventureTitle),
+      );
       expect(
         adventureFromJson.progressIndicator, // Renomeado
         equals(testProgressIndicator),
@@ -106,6 +118,8 @@ void main() {
       final dbMap = {
         'id': testId,
         'scenario_title': testScenarioTitle, // Mantém snake_case no DB map
+        'adventure_title':
+            testAdventureTitle, // Adicionado snake_case no DB map
         'progress_indicator':
             testProgressIndicator, // Mantém snake_case no DB map
         'game_state': testGameStateJson, // Mantém snake_case no DB map
@@ -121,6 +135,10 @@ void main() {
         adventureFromMap.scenarioTitle,
         equals(testScenarioTitle),
       ); // Renomeado
+      expect(
+        adventureFromMap.adventureTitle, // Adicionado
+        equals(testAdventureTitle),
+      );
       expect(
         adventureFromMap.progressIndicator, // Renomeado
         equals(testProgressIndicator),

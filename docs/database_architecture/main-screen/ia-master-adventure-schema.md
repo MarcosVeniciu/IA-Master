@@ -1,12 +1,13 @@
 # Adventure Schema
 
 ## Fields
-- id: TEXT (PRIMARY KEY NOT NULL, Identificador único da aventura, pode ser um UUID)
-- scenario_title: TEXT (NOT NULL, Título do cenário sendo jogado, conforme RF-002)
-- progress_indicator: TEXT (NULLABLE, String descritiva do progresso, conforme RF-002)
-- game_state: TEXT (NOT NULL, String JSON contendo o estado atual do jogo, variáveis, etc., conforme RNF-008)
-- last_played_date: INTEGER (NOT NULL, Timestamp Unix da última interação, para ordenação)
-- sync_status: INTEGER (NOT NULL DEFAULT 0, Otimização: 0=local, 1=sincronizado, 2=modificado localmente)
+- id: TEXT (PRIMARY KEY NOT NULL, Identificador único da aventura, UUID)
+- scenario_title: TEXT (NOT NULL, Título do cenário base)
+- adventure_title: TEXT (NOT NULL, Título específico da instância da aventura)
+- progress_indicator: REAL (NULLABLE, Progresso numérico de 0.0 a 1.0)
+- game_state: TEXT (NOT NULL, String JSON contendo o estado atual do jogo)
+- last_played_date: INTEGER (NOT NULL, Timestamp Unix (ms since epoch) da última interação)
+- sync_status: INTEGER (NOT NULL DEFAULT 0, Status de sincronização: 0=local, 1=syncing, 2=synced, -1=error)
 
 ## Relationships
 - **Implícito:** Baseado em um `Scenario` (identificado por `scenario_title`).
